@@ -1,0 +1,7 @@
+# config.yaml
+dataset: "Skylion007/openwebtext"
+vocab_size: 5000
+block_size: 128
+batch_size: 16
+learning_rate: 0.0003
+epochs: 1000

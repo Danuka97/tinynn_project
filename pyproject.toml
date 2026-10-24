@@ -1,0 +1,46 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tinynn-project"
+version = "0.1.0"
+description = "A from-scratch neural network library with manual backpropagation, including a GPT language model"
+readme = "README.md"
+license = "Apache-2.0"
+requires-python = ">=3.11"
+authors = [
+    { name = "YOUR_NAME" },
+]
+keywords = ["deep-learning", "transformer", "gpt", "backpropagation", "education"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "Intended Audience :: Education",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+dependencies = [
+    "datasets>=5.0.0",
+    "huggingface-hub>=1.22.0",
+    "numpy>=2.4.6",
+    "pyyaml>=6.0.3",
+    "torch>=2.12.1",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/YOUR_USERNAME/tinynn-project"
+Issues = "https://github.com/YOUR_USERNAME/tinynn-project/issues"
+
+[tool.setuptools]
+packages = ["tinynn", "tinynn.nn", "tinynn.optim"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
