@@ -38,3 +38,29 @@ def test_encode_unseen_text_falls_back_to_bytes():
 
     ids = tok.encode("xyz")  # no learned merges apply
     assert ids == list("xyz".encode("utf-8"))
+
+
+def test_decode_reverses_encode():
+    tok = BPETokenizer()
+    tok.train("hello world, hello there, hello!" * 10, vocab_size=300)
+
+    for text in ["hello world", "héllo wörld 👋", ""]:
+        assert tok.decode(tok.encode(text)) == text
+
+
+def test_tokenizer_rebuilt_from_merges_matches_the_original():
+    tok = BPETokenizer()
+    tok.train("hello world, hello there, hello!" * 10, vocab_size=300)
+
+    rebuilt = BPETokenizer(merges=tok.merges)
+    ids = tok.encode("hello there world")
+    assert rebuilt.encode("hello there world") == ids
+    assert rebuilt.decode(ids) == "hello there world"
+
+
+def test_training_leaves_vocab_empty():
+    # train.py's dataset.map() cache is keyed on the tokenizer's state, so
+    # filling vocab during training would force a full re-tokenization
+    tok = BPETokenizer()
+    tok.train("hello world, hello there, hello!" * 10, vocab_size=300)
+    assert vars(tok) == {"merges": tok.merges, "vocab": {}}

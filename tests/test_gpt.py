@@ -1,4 +1,5 @@
 """Tests for the GPT model assembled from tinynn modules."""
+import pytest
 import torch
 
 from models.gpt import GPT
@@ -23,6 +24,18 @@ def test_forward_accepts_shorter_sequences():
 
     logits = model(token_ids)
     assert logits.shape == (2, 5, 32)
+
+
+def test_forward_rejects_sequences_longer_than_max_seq_len():
+    model = make_model(block_size=8)
+    with pytest.raises(ValueError):
+        model(torch.randint(0, 32, (1, 9)))
+
+
+# Full-length, shorter and unbatched sequences
+@pytest.mark.parametrize("shape", [(2, 8), (2, 5), (8,)])
+def test_backward_matches_autograd(check_grads, shape):
+    check_grads(make_model(), torch.randint(0, 32, shape))
 
 
 def test_backward_populates_all_grads():

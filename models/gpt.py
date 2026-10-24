@@ -1,4 +1,4 @@
-# tinynn/models/gpt.py
+# models/gpt.py
 import torch
 from tinynn.nn.base import MinimalModule
 from tinynn.nn.embed import EmbeddingLayer
@@ -8,6 +8,9 @@ from tinynn.nn.linear import LinearLayer
 
 class GPT(MinimalModule):
     def __init__(self, vocab_size, max_seq_len, embed_size, num_layers, device):
+        # The longest sequence the position table has rows for
+        self.max_seq_len = max_seq_len
+
         # 1. The two lookup tables
         self.word_emb = EmbeddingLayer(vocab_size, embed_size, device)
         self.pos_emb = EmbeddingLayer(max_seq_len, embed_size, device)
@@ -28,8 +31,10 @@ class GPT(MinimalModule):
                 self.blocks.grads() + self.lm_head.grads())
 
     def forward(self, token_ids):
-        # Get the sequence length (token_ids is [batch, seq_len])
+        # Get the sequence length (token_ids is [batch, seq_len] or just [seq_len])
         T = token_ids.shape[-1]
+        if T > self.max_seq_len:
+            raise ValueError(f"Sequence length {T} exceeds max_seq_len ({self.max_seq_len})")
         
         # Generate position IDs: [0, 1, 2, ..., T-1]
         pos_ids = torch.arange(T, device=token_ids.device)
@@ -55,5 +60,6 @@ class GPT(MinimalModule):
 
         # X = word_vectors + pos_vectors, so the incoming grad is shared
         self.word_emb.backward(dX)
-        # pos_vectors was broadcast across the batch dim, so sum its grad back down
-        self.pos_emb.backward(dX.sum(dim=0))
+        # pos_vectors was broadcast across the batch dim (if there is one),
+        # so sum its grad back down to [seq_len, embed_size]
+        self.pos_emb.backward(dX.reshape(-1, *dX.shape[-2:]).sum(dim=0))

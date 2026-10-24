@@ -3,5 +3,5 @@ dataset: "Skylion007/openwebtext"
 vocab_size: 5000
 block_size: 128
 batch_size: 16
-learning_rate: 0.0003
-epochs: 1000
+learning_rate: 0.0003  # sized for Adam, which train.py uses
+steps: 1000            # optimizer steps (one random batch each), not passes over the data

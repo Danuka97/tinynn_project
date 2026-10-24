@@ -1,8 +1,11 @@
 # tokenizer.py
 class BPETokenizer:
-    def __init__(self):
-        self.merges = {} # Stores our learned rules: e.g., ('e', 'r') -> 'er'
-        self.vocab = {}  # Maps tokens to integer IDs: e.g., 'er' -> 257
+    def __init__(self, merges=None):
+        self.merges = dict(merges or {}) # Stores our learned rules: e.g., ('e', 'r') -> 'er'
+        # Maps integer IDs back to bytes: e.g., 257 -> b'er'. decode() fills it in
+        # lazily: train.py's dataset.map() cache is keyed on this object's state,
+        # so training must leave it exactly as it was.
+        self.vocab = {}
         
     def get_stats(self, ids):
         # Count frequencies of adjacent pairs
@@ -59,5 +62,18 @@ class BPETokenizer:
                 
             new_id = self.merges[pair]
             tokens = self.merge(tokens, pair, new_id)
-            
+
         return tokens
+
+    def decode(self, ids):
+        # 1. Build the ID -> bytes table if it's missing or out of date
+        if len(self.vocab) != 256 + len(self.merges):
+            self.vocab = {i: bytes([i]) for i in range(256)} # IDs 0-255 are the raw bytes
+            # Merges are stored in the order they were learned, so both parts already exist
+            for (p0, p1), new_id in self.merges.items():
+                self.vocab[new_id] = self.vocab[p0] + self.vocab[p1]
+
+        # 2. Join every ID's bytes and turn them back into text. errors="replace"
+        # covers output that stops partway through a multi-byte character
+        text_bytes = b"".join(self.vocab[i] for i in ids)
+        return text_bytes.decode("utf-8", errors="replace")

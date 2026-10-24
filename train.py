@@ -8,6 +8,7 @@ from datasets import load_dataset
 
 # Import your custom modules
 from models.gpt import GPT
+from tinynn.optim.adam import Adam
 
 from tokenizer import BPETokenizer
 
@@ -24,10 +25,20 @@ def setup_logging():
 
 def get_batch(data, batch_size, block_size, device):
     """Slices a random batch of inputs and targets from the dataset."""
-    ix = torch.randint(0, len(data) - block_size - 1, (batch_size,))
+    # randint's upper bound is exclusive, so the last start is len(data) - block_size - 1,
+    # whose target window ends exactly on the final token
+    ix = torch.randint(0, len(data) - block_size, (batch_size,))
     x = torch.stack([data[i : i + block_size] for i in ix])
     y = torch.stack([data[i + 1 : i + block_size + 1] for i in ix])
     return x.to(device), y.to(device)
+
+def save_checkpoint(path, model, model_config, tokenizer):
+    """Saves everything inference.load_checkpoint() needs to rebuild the model and tokenizer."""
+    torch.save({
+        "model_config": model_config,
+        "params": model.parameters(),
+        "merges": tokenizer.merges,
+    }, path)
 
 def main(config):
     setup_logging()
@@ -42,16 +53,18 @@ def main(config):
     block_size = config["block_size"]
     batch_size = config["batch_size"]
     lr = config["learning_rate"]
-    epochs = config["epochs"]
+    steps = config["steps"]
 
-    # 3. Initialize Model and Tokenizer
-    model = GPT(
-        vocab_size=vocab_size, 
-        max_seq_len=block_size, 
-        embed_size=256, 
-        num_layers=4, 
-        device=device
+    # 3. Initialize Model, Optimizer and Tokenizer
+    # (model_config is saved with the weights so inference can rebuild the model)
+    model_config = dict(
+        vocab_size=vocab_size,
+        max_seq_len=block_size,
+        embed_size=256,
+        num_layers=4,
     )
+    model = GPT(**model_config, device=device)
+    optimizer = Adam([model], learning_rate=lr)
     tokenizer = BPETokenizer()
 
     # 4. Data Pipeline
@@ -77,11 +90,11 @@ def main(config):
     data_tensor = torch.tensor(all_tokens, dtype=torch.long)
     logging.info(f"Total tokens ready for training: {len(data_tensor)}")
 
-    # 5. The Training Loop (manual backward pass + manual SGD update,
+    # 5. The Training Loop (manual backward pass + Adam update,
     # since this framework's layers implement their own backward() methods
     # rather than relying on PyTorch autograd)
     logging.info("Beginning optimization loop...")
-    for step in range(epochs):
+    for step in range(steps):
         X, Y = get_batch(data_tensor, batch_size, block_size, device)
 
         # Forward pass
@@ -100,19 +113,17 @@ def main(config):
 
         model.backward(dLogits)
 
-        # Manual SGD update using each layer's manually computed *_grad buffers
-        with torch.no_grad():
-            for p, g in zip(model.parameters(), model.grads()):
-                p -= lr * g
+        # Adam update using each layer's manually computed *_grad buffers
+        optimizer.step()
 
         if step % 100 == 0:
             logging.info(f"Step {step:04d} | Loss: {loss.item():.4f}")
 
     logging.info("Training complete!")
     
-    # 6. Save the model weights
-    torch.save(model.parameters(), "gpt_model.pt")
-    logging.info("Model weights successfully saved to gpt_model.pt!")
+    # 6. Save the model weights, its config and the tokenizer merges
+    save_checkpoint("gpt_model.pt", model, model_config, tokenizer)
+    logging.info("Model checkpoint successfully saved to gpt_model.pt!")
 
 if __name__ == "__main__":
     # Setup the argument parser

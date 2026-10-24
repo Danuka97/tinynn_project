@@ -12,7 +12,7 @@ class Adam:
 
     def __init__(self, layers, learning_rate=0.001, beta1=0.9, beta2=0.999,
                  epsilon=1e-8):
-        self.layers = layers  # A list of our custom layers (like LinearLayer)
+        self.layers = layers  # A list of our custom layers or whole models (like LinearLayer or GPT)
         self.lr = learning_rate
         self.beta1 = beta1
         self.beta2 = beta2
@@ -44,10 +44,11 @@ class Adam:
         self.t += 1
         # Iterate through every layer in our network
         for i, layer in enumerate(self.layers):
-            # We must only update layers that actually have weights to train
-            if hasattr(layer, 'weight'):
-                with torch.no_grad():
-                    self._update_param((i, 'weight'), layer.weight,
-                                       layer.weight_grad)
-                    self._update_param((i, 'bias'), layer.bias,
-                                       layer.bias_grad)
+            # parameters() and grads() line up one-to-one and include any nested
+            # layers, so this covers embeddings and whole models too. grads() is
+            # re-read every step because LinearLayer.backward() replaces its
+            # gradient tensors rather than updating them.
+            params, grads = layer.parameters(), layer.grads()
+            with torch.no_grad():
+                for j, (param, grad) in enumerate(zip(params, grads, strict=True)):
+                    self._update_param((i, j), param, grad)

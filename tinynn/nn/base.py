@@ -2,9 +2,10 @@
 
 class MinimalModule:
     def zero_grad(self):
-        for p in self.parameters():
-            if p.grad is not None:
-                p.grad.zero_()
+        # Our gradients live in each layer's *_grad buffers, not in p.grad
+        # (we never use autograd), so those are what we clear
+        for g in self.grads():
+            g.zero_()
 
     def parameters(self):
         return []

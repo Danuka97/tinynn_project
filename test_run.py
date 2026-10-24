@@ -18,7 +18,7 @@ optimizer = SGD([model], learning_rate=0.01)
 epochs = 100
 
 for epoch in range(epochs):
-    # 1. Forward Pass & Loss (Missing!)
+    # 1. Forward Pass & Loss
     Y_pred = model.forward(X_data)
     loss = criterion.forward(Y_pred, Y_true)
 
