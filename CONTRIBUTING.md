@@ -5,7 +5,7 @@ Contributions are welcome! Please follow these guidelines.
 ## Development Setup
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/tinynn-project.git
+git clone https://github.com/Danuka97/tinynn_project.git
 cd tinynn-project
 pip install -e ".[dev]"
 ```

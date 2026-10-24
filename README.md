@@ -1,6 +1,6 @@
 # TinyNN: A From-Scratch Neural Network Library
 
-[![Tests](https://github.com/YOUR_USERNAME/tinynn-project/actions/workflows/ci.yml/badge.svg)](https://github.com/YOUR_USERNAME/tinynn-project/actions/workflows/ci.yml)
+[![Tests](https://github.com/Danuka97/tinynn_project/actions/workflows/ci.yml/badge.svg)](https://github.com/Danuka97/tinynn_project/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/python-%E2%89%A53.11-blue)](pyproject.toml)
 
@@ -31,7 +31,7 @@ backpropagation through a Transformer fully explicit.
 Requires Python ≥ 3.11.
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/tinynn-project.git
+git clone https://github.com/Danuka97/tinynn_project.git
 cd tinynn-project
 pip install -e .
 ```
@@ -93,7 +93,7 @@ output = generate_text(model, token_ids, max_new_tokens=50,
 Instead of `loss.backward()`, TinyNN threads gradients explicitly:
 
 1. The cross-entropy gradient w.r.t. the logits is computed analytically as
-   $\text{softmax}(\text{logits}) - \text{one\_hot}(y)$, scaled by $1/N$.
+   `softmax(logits) - one_hot(y)`, scaled by `1/N`.
 2. `model.backward(dLogits)` propagates the gradient backwards through the LM
    head, transformer blocks, and embedding tables, with each layer caching its
    inputs during `forward` and consuming them in `backward`.
@@ -132,7 +132,7 @@ If you use this code in your work, please cite:
   title  = {TinyNN: A From-Scratch Neural Network Library},
   author = {Danuka Wickramasinghe},
   year   = {2026},
-  url    = {https://github.com/YOUR_USERNAME/tinynn-project}
+  url    = {https://github.com/Danuka97/tinynn_project}
 }
 ```
 
