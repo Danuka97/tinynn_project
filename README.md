@@ -32,7 +32,7 @@ Requires Python ≥ 3.11.
 
 ```bash
 git clone https://github.com/Danuka97/tinynn_project.git
-cd tinynn-project
+cd tinynn_project
 pip install -e .
 ```
 
@@ -53,8 +53,8 @@ dataset: "Skylion007/openwebtext"
 vocab_size: 5000
 block_size: 128
 batch_size: 16
-learning_rate: 0.0003
-epochs: 1000
+learning_rate: 0.0003  # sized for Adam, which train.py uses
+steps: 1000            # optimizer steps (one random batch each), not passes over the data
 ```
 
 Then run:
@@ -64,28 +64,21 @@ python train.py --config config.yaml
 ```
 
 The script trains the BPE tokenizer on a sample of the dataset, tokenizes the
-corpus, and runs the manual optimization loop. Progress is logged to the
-console and `training_log.txt`; trained weights are saved to `gpt_model.pt`.
+corpus, and trains the model with manual backpropagation and Adam. Progress is
+logged to the console and `training_log.txt`. The trained weights, the model
+config and the tokenizer's merges are saved together to `gpt_model.pt`.
 
 ### Generation
 
 ```python
-import torch
-from models.gpt import GPT
-from inference import generate_text
+from inference import generate_text, load_checkpoint
 
-model = GPT(vocab_size=5000, max_seq_len=128, embed_size=256,
-            num_layers=4, device="cpu")
+# Rebuilds the model and tokenizer saved by train.py
+model, tokenizer = load_checkpoint("gpt_model.pt")
 
-# Weights are saved as a flat list of tensors (see train.py)
-saved = torch.load("gpt_model.pt")
-with torch.no_grad():
-    for param, trained in zip(model.parameters(), saved):
-        param.copy_(trained)
-
-token_ids = [45, 912]  # prompt token ids
-output = generate_text(model, token_ids, max_new_tokens=50,
-                       stop_token_id=50256, temperature=0.8)
+prompt = tokenizer.encode("The meaning of life is")
+output = generate_text(model, prompt, max_new_tokens=50, temperature=0.8)
+print(tokenizer.decode(output))
 ```
 
 ## How It Works
@@ -120,8 +113,8 @@ tests/             Pytest suite
 pytest
 ```
 
-The suite includes numerical gradient checks that validate TinyNN's manual
-`backward` implementations against PyTorch autograd.
+The suite includes numerical gradient checks that validate every layer's manual
+`backward`, up to the full GPT, against PyTorch autograd.
 
 ## Citing
 

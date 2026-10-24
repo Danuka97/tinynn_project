@@ -6,7 +6,7 @@ Contributions are welcome! Please follow these guidelines.
 
 ```bash
 git clone https://github.com/Danuka97/tinynn_project.git
-cd tinynn-project
+cd tinynn_project
 pip install -e ".[dev]"
 ```
 
