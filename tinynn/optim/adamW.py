@@ -11,12 +11,13 @@ class Adam:
     """
 
     def __init__(self, layers, learning_rate=0.001, beta1=0.9, beta2=0.999,
-                 epsilon=1e-8):
+                 epsilon=1e-8, weight_decay=0.01):
         self.layers = layers  # A list of our custom layers or whole models (like LinearLayer or GPT)
         self.lr = learning_rate
         self.beta1 = beta1
         self.beta2 = beta2
         self.epsilon = epsilon
+        self.weight_decay = weight_decay
         self.t = 0  # Timestep, used for bias correction
 
         # Moment buffers, created lazily to match each parameter's shape
@@ -38,7 +39,13 @@ class Adam:
         v_hat = self.v[key] / (1 - self.beta2 ** self.t)
 
         # 4. Take the adaptive step
-        param -= self.lr * m_hat / (torch.sqrt(v_hat) + self.epsilon)
+        # Decoupled weight decay
+        param -= self.lr * self.weight_decay * param
+
+        # Adaptive Adam update
+        param -= self.lr * m_hat / (
+            torch.sqrt(v_hat) + self.epsilon
+        )
 
     def step(self):
         self.t += 1
